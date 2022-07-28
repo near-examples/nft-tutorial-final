@@ -7,7 +7,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]  # mac-os currently in development
     runs-on: ${{ matrix.platform }}
     env:
       RUST_BACKTRACE: 1
@@ -26,6 +26,5 @@ jobs:
         run: npm run test:unit
       - name: Run Rust integration tests
         run: npm run test:integration:rs
-      # TODO
-      # - name: Run TS integration tests
-      #   run: npm run test:integration:ts
+      - name: Run TS integration tests
+        run: npm run test:integration:ts
