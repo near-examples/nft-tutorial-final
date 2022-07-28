@@ -1,4 +1,4 @@
-import { NEAR, NearAccount } from "near-workspaces-ava";
+import { NEAR, NearAccount } from "near-workspaces";
 
 export async function expect(action: () => {}, ...assertions: Assertion[]) {
   const before = await Promise.all(assertions.map((a) => a.before()));

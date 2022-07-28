@@ -13,7 +13,7 @@ export async function purchaseListedNFT(
     nft_contract_id: nft_contract,
     token_id: "TEST123",
   };
-  await bidder_account.call_raw(
+  await bidder_account.callRaw(
     market_contract,
     "offer",
     offer_payload,

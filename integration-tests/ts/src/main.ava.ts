@@ -21,19 +21,15 @@ test.beforeEach(async (t) => {
   const worker = await Worker.init();
   const root = worker.rootAccount;
 
-  const nft_contract = await root.createAndDeploy(
-    root.getSubAccount("nft-contract").accountId,
+  const nft_contract = await root.devDeploy(
     "../../out/main.wasm",
-    { initialBalance: NEAR.parse("100 N").toJSON() }
+    { initialBalance: NEAR.parse("100 N").toJSON(), method: "new_default_meta", args: { owner_id: root } }
   );
-  await nft_contract.call(nft_contract, "new_default_meta", { owner_id: root });
 
-  const market_contract = await root.createAndDeploy(
-    root.getSubAccount("nft-market").accountId,
+  const market_contract = await root.devDeploy(
     "../../out/market.wasm",
-    { initialBalance: NEAR.parse("100 N").toJSON() }
+    { initialBalance: NEAR.parse("100 N").toJSON(), method: "new", args: { owner_id: root } }
   );
-  await market_contract.call(market_contract, "new", { owner_id: root });
 
   const alice = await root.createSubAccount("alice", {
     initialBalance: NEAR.parse("100 N").toJSON(),
@@ -136,13 +132,13 @@ test("nft contract: nft approve call long msg string", async (t) => {
     account_id: market_contract,
     msg: "sample message".repeat(10 * 1024),
   };
-  const result = await alice.call_raw(
+  const result = await alice.callRaw(
     nft_contract,
     "nft_approve",
     approve_payload,
     defaultCallOptions()
   );
-  t.regex(result.promiseErrorMessages.join("\n"), /Exceeded the prepaid gas+/);
+  t.regex(result.receiptFailureMessages.join("\n"), /Exceeded the prepaid gas+/);
 
   // test if approved
   const view_payload = {
@@ -177,7 +173,7 @@ test("cross contract: sell NFT listed on marketplace", async (t) => {
   const view_payload = {
     token_id: "TEST123",
   };
-  const token_info = await nft_contract.view("nft_token", view_payload);
+  const token_info: object = await nft_contract.view("nft_token", view_payload);
   t.is(token_info["owner_id"], bob.accountId, "NFT should have been sold");
   // nothing left for sale on market
   const sale_supply = await market_contract.view("get_supply_sales");
@@ -200,7 +196,7 @@ test("cross contract: transfer NFT when listed on marketplace", async (t) => {
     nft_contract_id: nft_contract,
     token_id: "TEST123",
   };
-  const result = await charlie.call_raw(
+  const result = await charlie.callRaw(
     market_contract,
     "offer",
     offer_payload,
@@ -215,14 +211,14 @@ test("cross contract: transfer NFT when listed on marketplace", async (t) => {
   const view_payload = {
     token_id: "TEST123",
   };
-  const token_info = await nft_contract.view("nft_token", view_payload);
+  const token_info: object = await nft_contract.view("nft_token", view_payload);
   t.is(
     token_info["owner_id"],
     bob.accountId, // NFT was transferred to bob
     "NFT should have bob as owner"
   );
   // Unauthorized error should be found
-  t.regex(result.promiseErrorMessages.join("\n"), /Unauthorized+/);
+  t.regex(result.receiptFailureMessages.join("\n"), /Unauthorized+/);
 });
 
 test("cross contract: approval revoke", async (t) => {
@@ -254,7 +250,7 @@ test("cross contract: approval revoke", async (t) => {
     token_id: "TEST123",
     approval_id: 1,
   };
-  const result = await market_contract.call_raw(
+  const result = await market_contract.callRaw(
     nft_contract,
     "nft_transfer",
     transfer_payload,
@@ -263,7 +259,7 @@ test("cross contract: approval revoke", async (t) => {
 
   // assert expectations
   // Unauthorized error should be found
-  t.regex(result.promiseErrorMessages.join("\n"), /Unauthorized+/);
+  t.regex(result.receiptFailureMessages.join("\n"), /Unauthorized+/);
 });
 
 test("cross contract: reselling and royalties", async (t) => {
